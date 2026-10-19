@@ -211,11 +211,7 @@ void GameController::handleGameInput() {
                         engine->revealCell(index);
                 }
         } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && currentState == GameState::RUNNING) {
-                auto &cell = engine->getCell(index);
-                if (!cell.isRevealed) {
-                        cell.isFlagged = !cell.isFlagged;
-                        cell.isFlagged ? engine->incrementFlag() : engine->decrementFlag();
-                }
+                engine->toggleFlag(index);
         }
 }
 
@@ -229,49 +225,29 @@ void GameController::update() {
         }
         timeElapsed = static_cast<int>(GetTime() - startTime);
 
-        int revealedCount = 0;
-        bool mineExploded = false;
-        int totalCells = static_cast<int>(engine->getGrid().size());
-
-        for (const auto &cell: engine->getGrid()) {
-                if (cell.isRevealed) {
-                        if (cell.isMine) {
-                                mineExploded = true;
-                                break;
-                        }
-                        ++revealedCount;
-                }
-        }
-        if (mineExploded) {
+        if (engine->isGameLost()) {
                 currentState = GameState::LOST;
-                for (int idx = 0; idx < totalCells; ++idx) {
-                        if (engine->getGrid()[idx].isMine) {
-                                engine->getCell(idx).isRevealed = true;
-                        }
-                }
-        } else if (revealedCount == (totalCells - engine->total_mines())) {
+                engine->revealAllMines();
+        } else if (engine->isGameWon()) {
                 currentState = GameState::WON;
         }
 }
 
 void GameController::reset(DifficultyConfig config) {
-        // 1. Instantiation: Create a fresh empty engine wrapper via default 0-arg constructor
+        // Create a fresh empty engine wrapper via default 0-arg constructor
         if (selectedMode == GameMode::CLASSIC) {
                 engine = std::make_unique<ClassicMinesweeper>();
         } else {
                 engine = std::make_unique<NoGuessMinesweeper>();
         }
-
-        // Use loadBoard implementation to configure the grid vectors
-        // (Accessing properties directly since DifficultyConfig is a raw struct!)
         engine->loadBoard(config.width, config.height, config.mineCount);
 
-        // 4. Reset tracking metrics
+        // Reset tracking metrics
         timeElapsed = 0;
         currentState = GameState::BEGIN;
         appState = AppState::PLAYING;
 
-        // 5. Reset camera matrices
+        // Reset camera matrices
         centerCamera();
 }
 

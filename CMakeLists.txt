@@ -23,6 +23,8 @@ add_executable(MinesweeperClassic main.cpp ClassicMinesweeper.cpp
         GameController.cpp
         GameController.h
         Config.h
+        Solver.cpp
+        Solver.h
 )
 
 # --- 4. Link it up ---

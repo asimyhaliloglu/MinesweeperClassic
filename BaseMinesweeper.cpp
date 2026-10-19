@@ -2,6 +2,17 @@
 
 #include <cmath>
 
+void BaseMinesweeper::toggleFlag(int index) {
+        if (index < 0 || index >= static_cast<int>(grid.size()) || grid[index].isRevealed) {
+                return;
+        }
+        grid[index].isFlagged = !grid[index].isFlagged;
+        if (grid[index].isFlagged) {
+                totalFlags++;
+        } else {
+                totalFlags--;
+        }
+}
 
 void BaseMinesweeper::loadBoard(int w, int h, int m) {
         width = w;
@@ -32,11 +43,53 @@ void BaseMinesweeper::loadBoard(int w, int h, int m) {
         }
 }
 
-void BaseMinesweeper::resetBoardState() {
+void BaseMinesweeper::initBoard(int cx, int cy) {
+        std::uniform_int_distribution<> distX(0, width - 1);
+        std::uniform_int_distribution<> distY(0, height - 1);
+
+        resetBoardConstraints();
+        resetBoardSolver();
+
+        int placedMines = 0;
+        while (placedMines < totalMines) {
+                int rx = distX(gen);
+                int ry = distY(gen);
+
+                bool isInsideSafetyZone = false;
+
+                if (useSafeOpening) {
+                        // safety buffer for not instant failure
+                        isInsideSafetyZone = std::abs(rx - cx) <= 1 && std::abs(ry - cy) <= 1;
+                } else {
+                        // true old school
+                        isInsideSafetyZone = rx == cx && ry == cy;
+                }
+                // Reject if it falls in the safety zone OR if a mine is already there
+                int targetIndex = getCellID(rx, ry);
+                if (isInsideSafetyZone || getCell(targetIndex).isMine) {
+                        continue;
+                }
+                getCell(targetIndex).isMine = true;
+                placedMines++;
+        }
+        countNeighboringMines();
+}
+
+void BaseMinesweeper::resetBoardSolver() {
         for (auto &cell: grid) {
                 cell.isRevealed = false;
                 cell.isFlagged = false;
-                cell.id = 1;
+                cell.id = -1;
+        }
+        mineExploded = false;
+        totalRevealed = 0;
+        totalFlags = 0;
+}
+
+void BaseMinesweeper::resetBoardConstraints() {
+        for (auto &cell : grid) {
+                cell.isMine = false;
+                cell.neighboringMines = 0;
         }
 }
 
@@ -54,9 +107,14 @@ bool BaseMinesweeper::revealCell(int index) {
                 Cell *current = toReveal.back();
                 toReveal.pop_back();
                 if (current->isRevealed || current->isFlagged) {
-                        continue;;
+                        continue;
                 }
                 current->isRevealed = true;
+                if (current->isMine) {
+                        mineExploded = true;
+                } else {
+                        ++totalRevealed;
+                }
                 if (current->neighboringMines == 0 && !current->isMine) {
                         for (Cell *neighbor: current->neighbors) {
                                 if (!neighbor->isRevealed && !neighbor->isFlagged) {
@@ -127,7 +185,4 @@ void BaseMinesweeper::incrementFlag() {
 
 void BaseMinesweeper::decrementFlag() {
         totalFlags--;
-}
-
-void floodFillRecursion() {
 }

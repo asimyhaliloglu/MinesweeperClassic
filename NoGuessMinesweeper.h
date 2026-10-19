@@ -5,30 +5,7 @@
 #ifndef MINESWEEPERCLASSIC_NOGUESSMINESWEEPER_H
 #define MINESWEEPERCLASSIC_NOGUESSMINESWEEPER_H
 #include "BaseMinesweeper.h"
-
-// The final answer, holds if the cell is a mine or not
-struct Deduction {
-        Cell *cellPtr;
-        bool isMine;
-};
-
-// Holds the boolean coefficients as well as the solution parameter
-// struct MatrixRow {
-//         std::vector<int> coefficients;
-//         int targetValue = 0;
-// };
-
-// Holds the boolean coefficients as well as the dynamic solution parameter.
-struct SparseRow {
-        std::vector<int> activeVarIDs;
-        int targetValue;
-};
-
-// A linear equation system that updates with each expansion
-struct LinearEquationSystem {
-        std::vector<SparseRow> matrixA;
-        std::vector<Cell *> variableToCellMap;
-};
+#include "Solver.h"
 
 
 class NoGuessMinesweeper : public BaseMinesweeper {
@@ -49,6 +26,7 @@ private:
 
 public:
         void generateBoard(int firstClickX, int firstClickY) override;
+        friend class Solver;
 };
 
 
