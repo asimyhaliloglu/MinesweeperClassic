@@ -8,9 +8,12 @@
 
 #include "NoGuessMinesweeper.h"
 
+#include "ClassicMinesweeper.h"
+
 #include "raylib.h"
 
 #include <algorithm>
+
 
 void GameController::run() {
         selectedMode = GameMode::CLASSIC;
@@ -158,17 +161,24 @@ void GameController::renderGame() const {
                 if (!cell.isRevealed) {
                         // Draw the tile background base
                         DrawRectangleRec(rect, LIGHTGRAY);
-
                         // Draw the flag on top if marked
                         if (cell.isFlagged) {
                                 drawFlagIcon(x, y, tileSize);
                         }
                 }
                 else {
-                        DrawRectangleRec(rect, cell.isMine ? RED : RAYWHITE);
-                        if (cell.neighboringMines > 0 && !cell.isMine) {
-                                DrawText(TextFormat("%d", cell.neighboringMines), x + 10, y + 6, 20,
-                                         getNumberColor(cell.neighboringMines));
+                        // If the game is lost and this cell exploded, give it a red background;
+                        // otherwise draw a normal open tile background
+                        if (cell.isMine) {
+                                // Red tile highlight for the mine that blew up, RAYWHITE for the others
+                                DrawRectangleRec(rect, currentState == GameState::LOST ? RED : RAYWHITE);
+                                drawMineIcon(x, y, tileSize);
+                        } else {
+                                DrawRectangleRec(rect, RAYWHITE);
+                                if (cell.neighboringMines > 0) {
+                                        DrawText(TextFormat("%d", cell.neighboringMines), x + 10, y + 6, 20,
+                                                 getNumberColor(cell.neighboringMines));
+                                }
                         }
                 }
         }
@@ -193,7 +203,9 @@ void GameController::handleGameInput() {
                 if (camera.zoom < 0.2f) camera.zoom = 0.2f;
         }
 
-        if (currentState == GameState::LOST || currentState == GameState::WON) {
+        if (currentState == GameState::LOST || currentState == GameState::WON
+
+        ) {
                 if (IsKeyPressed(KEY_R)) {
                         reset({engine->getWidth(), engine->getHeight(), engine->total_mines()});
                 }
@@ -215,13 +227,12 @@ void GameController::handleGameInput() {
                         currentState = GameState::RUNNING;
                         startTime = GetTime(); //Fixed the early clock initialization
                 }
-                        if (engine->getGrid()[index].isRevealed) {
-                                engine->chordCell(index);
-                        }
-                        else {
-                                engine->revealCell(index);
-                        }
-
+                if (engine->getGrid()[index].isRevealed) {
+                        engine->chordCell(index);
+                }
+                else {
+                        engine->revealCell(index);
+                }
         }
         else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && currentState == GameState::RUNNING) {
                 engine->toggleFlag(index);
@@ -310,17 +321,47 @@ void GameController::drawFlagIcon(int cellPixelX, int cellPixelY, int size) {
         float s = static_cast<float>(size);
 
         // 1. Pole base (dark gray / black platform)
-        Rectangle baseRect = { x + s * 0.25f, y + s * 0.80f, s * 0.50f, s * 0.08f };
+        Rectangle baseRect = {x + s * 0.25f, y + s * 0.80f, s * 0.50f, s * 0.08f};
         DrawRectangleRec(baseRect, DARKGRAY);
 
         // 2. Pole mast (vertical line up the center-left)
-        Vector2 poleBottom = { x + s * 0.38f, y + s * 0.80f };
-        Vector2 poleTop    = { x + s * 0.38f, y + s * 0.20f };
+        Vector2 poleBottom = {x + s * 0.38f, y + s * 0.80f};
+        Vector2 poleTop = {x + s * 0.38f, y + s * 0.20f};
         DrawLineEx(poleBottom, poleTop, 2.5f, BLACK);
 
         // 3. Pennant / Banner (Red Triangle pointing right)
         Vector2 p1 = poleTop;
-        Vector2 p2 = { x + s * 0.38f, y + s * 0.52f };
-        Vector2 p3 = { x + s * 0.82f, y + s * 0.36f };
+        Vector2 p2 = {x + s * 0.38f, y + s * 0.52f};
+        Vector2 p3 = {x + s * 0.82f, y + s * 0.36f};
         DrawTriangle(p1, p2, p3, RED);
+}
+
+void GameController::drawMineIcon(int cellPixelX, int cellPixelY, int size) {
+        float x = static_cast<float>(cellPixelX);
+        float y = static_cast<float>(cellPixelY);
+        float s = static_cast<float>(size);
+
+        Vector2 center = {x + s * 0.5f, y + s * 0.5f};
+        float bodyRadius = s * 0.28f;
+        float spikeLength = s * 0.40f;
+        float spikeThick = 2.0f;
+
+        // 1. Eight radiating spikes (horizontal, vertical, diagonals)
+        // Horizontal & Vertical
+        DrawLineEx({center.x - spikeLength, center.y}, {center.x + spikeLength, center.y}, spikeThick, BLACK);
+        DrawLineEx({center.x, center.y - spikeLength}, {center.x, center.y + spikeLength}, spikeThick, BLACK);
+
+        // Diagonals (offset by ~0.7071 * spikeLength)
+        float diagOffset = spikeLength * 0.7071f;
+        DrawLineEx({center.x - diagOffset, center.y - diagOffset}, {center.x + diagOffset, center.y + diagOffset},
+                   spikeThick, BLACK);
+        DrawLineEx({center.x - diagOffset, center.y + diagOffset}, {center.x + diagOffset, center.y - diagOffset},
+                   spikeThick, BLACK);
+
+        // 2. Central mine body (solid black/dark circle)
+        DrawCircleV(center, bodyRadius, BLACK);
+
+        // 3. Retro specular highlight (small white dot offset toward the top-left)
+        Vector2 highlightCenter = {center.x - bodyRadius * 0.35f, center.y - bodyRadius * 0.35f};
+        DrawCircleV(highlightCenter, bodyRadius * 0.28f, RAYWHITE);
 }

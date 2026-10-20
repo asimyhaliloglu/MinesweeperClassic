@@ -6,7 +6,6 @@
 #define MINESWEEPERCLASSIC_GAMECONTROLLER_H
 #include <memory>
 
-#include "ClassicMinesweeper.h"
 #include "raylib.h"
 #include "BaseMinesweeper.h"
 #include "Config.h"
@@ -52,6 +51,8 @@ private:
         void centerCamera();
 
         static void drawFlagIcon(int cellPixelX, int cellPixelY, int size);
+        
+        static void drawMineIcon(int cellPixelX, int cellPixelY, int size);
 
 public:
         GameController() {
