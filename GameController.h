@@ -51,7 +51,7 @@ private:
 
         void centerCamera();
 
-        static void GameController::drawFlagIcon(int cellPixelX, int cellPixelY, int size);
+        static void drawFlagIcon(int cellPixelX, int cellPixelY, int size);
 
 public:
         GameController() {
