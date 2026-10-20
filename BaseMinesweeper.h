@@ -70,7 +70,7 @@ public:
                 return grid[index];
         }
 
-        [[nodiscard]] int getCellID(int x, int y) {
+        [[nodiscard]] int getCellID(int x, int y) const {
                 return x + (y * width);
         }
 
@@ -127,6 +127,14 @@ public:
 
         [[nodiscard]] int countUnrevealedNeighbors(int index) const;
 
+        void flagAllMines() {
+                for (auto &cell : grid) {
+                        if (cell.isMine && !cell.isFlagged) {
+                                cell.isFlagged = true;
+                                totalFlags++;
+                        }
+                }
+        }
 
         [[nodiscard]] int getWidth() const {
                 return width;
