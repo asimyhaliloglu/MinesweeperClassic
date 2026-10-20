@@ -38,28 +38,28 @@ void GameController::run() {
 
 void GameController::handleInput() {
         switch (appState) {
-                case AppState::MAIN_MENU:
-                        handleMenuInput();
-                        break;
-                case AppState::PLAYING:
-                        handleGameInput();
-                        break;
-                case AppState::OPTIONS:
-                        break;
+        case AppState::MAIN_MENU:
+                handleMenuInput();
+                break;
+        case AppState::PLAYING:
+                handleGameInput();
+                break;
+        case AppState::OPTIONS:
+                break;
         }
 }
 
 
 void GameController::render() const {
         switch (appState) {
-                case AppState::MAIN_MENU:
-                        renderMainMenu();
-                        break;
-                case AppState::PLAYING:
-                        renderGame();
-                        break;
-                case AppState::OPTIONS:
-                        break;
+        case AppState::MAIN_MENU:
+                renderMainMenu();
+                break;
+        case AppState::PLAYING:
+                renderGame();
+                break;
+        case AppState::OPTIONS:
+                break;
         }
 }
 
@@ -74,7 +74,7 @@ void GameController::renderMainMenu() const {
         int titleWidth = MeasureText("MINESWEEPER", 60);
         DrawText("MINESWEEPER", (screenWidth - titleWidth) / 2, screenHeight / 4 - 60, 60, RAYWHITE);
 
-        const char *modeText = selectedMode == GameMode::CLASSIC
+        const char* modeText = selectedMode == GameMode::CLASSIC
                                        ? "Mode: Classic (Press M to toggle)"
                                        : "Mode: NoGuess (Press M to toggle)";
         int modeWidth = MeasureText(modeText, 20);
@@ -84,16 +84,17 @@ void GameController::renderMainMenu() const {
         int buttonHeight = 50;
         int startX = (screenWidth - buttonWidth) / 2; // Perfectly center buttons horizontally
         int startY = screenHeight / 2 - 50;
-        const char *labels[] = {"Beginner (9x9)", "Intermediate (16x16)", "Expert (30x16)", "Evil (30x20)"};
+        const char* labels[] = {"Beginner (9x9)", "Intermediate (16x16)", "Expert (30x16)", "Evil (30x20)"};
 
         for (int i = 0; i < 4; ++i) {
                 Rectangle buttonReact = {
-                        (float) startX, (float) startY + i * 70, (float) buttonWidth, (float) buttonHeight
+                        (float)startX, (float)startY + i * 70, (float)buttonWidth, (float)buttonHeight
                 };
                 if (CheckCollisionPointRec(GetMousePosition(), buttonReact)) {
                         DrawRectangleRec(buttonReact, LIGHTGRAY);
                         DrawText(labels[i], startX + 20, startY + 15 + i * 70, 20, BLACK);
-                } else {
+                }
+                else {
                         DrawRectangleRec(buttonReact, GRAY);
                         DrawText(labels[i], startX + 20, startY + 15 + i * 70, 20, RAYWHITE);
                 }
@@ -113,13 +114,16 @@ void GameController::handleMenuInput() {
                 int startX = (GetScreenWidth() - 300) / 2;
                 int startY = GetScreenHeight() / 2 - 50;
 
-                if (CheckCollisionPointRec(mouse, {(float) startX, (float) startY, 300, 50})) {
+                if (CheckCollisionPointRec(mouse, {(float)startX, (float)startY, 300, 50})) {
                         reset(BEGINNER);
-                } else if (CheckCollisionPointRec(mouse, {(float) startX, (float) startY + 70, 300, 50})) {
+                }
+                else if (CheckCollisionPointRec(mouse, {(float)startX, (float)startY + 70, 300, 50})) {
                         reset(INTERMEDIATE);
-                } else if (CheckCollisionPointRec(mouse, {(float) startX, (float) startY + 140, 300, 50})) {
+                }
+                else if (CheckCollisionPointRec(mouse, {(float)startX, (float)startY + 140, 300, 50})) {
                         reset(EXPERT);
-                } else if (CheckCollisionPointRec(mouse, {(float) startX, (float) startY + 210, 300, 50})) {
+                }
+                else if (CheckCollisionPointRec(mouse, {(float)startX, (float)startY + 210, 300, 50})) {
                         reset(EVIL);
                 }
         }
@@ -145,15 +149,22 @@ void GameController::renderGame() const {
 
         BeginMode2D(camera);
         for (int idx = 0; idx < engine->getGrid().size(); ++idx) {
-                const Cell &cell = engine->getGrid()[idx];
+                const Cell& cell = engine->getGrid()[idx];
                 int x = (idx % engine->getWidth()) * tileSize;
                 int y = (idx / engine->getWidth()) * tileSize;
 
-                Rectangle rect = {(float) x, (float) y, (float) tileSize - 3, (float) tileSize - 3};
+                Rectangle rect = {(float)x, (float)y, (float)tileSize - 3, (float)tileSize - 3};
 
                 if (!cell.isRevealed) {
-                        DrawRectangleRec(rect, cell.isFlagged ? RED : LIGHTGRAY);
-                } else {
+                        // Draw the tile background base
+                        DrawRectangleRec(rect, LIGHTGRAY);
+
+                        // Draw the flag on top if marked
+                        if (cell.isFlagged) {
+                                drawFlagIcon(x, y, tileSize);
+                        }
+                }
+                else {
                         DrawRectangleRec(rect, cell.isMine ? RED : RAYWHITE);
                         if (cell.neighboringMines > 0 && !cell.isMine) {
                                 DrawText(TextFormat("%d", cell.neighboringMines), x + 10, y + 6, 20,
@@ -204,13 +215,15 @@ void GameController::handleGameInput() {
                         currentState = GameState::RUNNING;
                         startTime = GetTime(); //Fixed the early clock initialization
                 }
+                        if (engine->getGrid()[index].isRevealed) {
+                                engine->chordCell(index);
+                        }
+                        else {
+                                engine->revealCell(index);
+                        }
 
-                if (engine->getGrid()[index].isRevealed) {
-                        engine->chordCell(index);
-                } else {
-                        engine->revealCell(index);
-                }
-        } else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && currentState == GameState::RUNNING) {
+        }
+        else if (IsMouseButtonPressed(MOUSE_RIGHT_BUTTON) && currentState == GameState::RUNNING) {
                 engine->toggleFlag(index);
         }
 }
@@ -228,7 +241,8 @@ void GameController::update() {
         if (engine->isGameLost()) {
                 currentState = GameState::LOST;
                 engine->revealAllMines();
-        } else if (engine->isGameWon()) {
+        }
+        else if (engine->isGameWon()) {
                 currentState = GameState::WON;
         }
 }
@@ -237,7 +251,8 @@ void GameController::reset(DifficultyConfig config) {
         // Create a fresh empty engine wrapper via default 0-arg constructor
         if (selectedMode == GameMode::CLASSIC) {
                 engine = std::make_unique<ClassicMinesweeper>();
-        } else {
+        }
+        else {
                 engine = std::make_unique<NoGuessMinesweeper>();
         }
         engine->loadBoard(config.width, config.height, config.mineCount);
@@ -253,37 +268,37 @@ void GameController::reset(DifficultyConfig config) {
 
 Color GameController::getNumberColor(int number) {
         switch (number) {
-                case 1:
-                        return GetColor(0x0000FFFF);
-                case 2:
-                        return GetColor(0x008000FF);
-                case 3:
-                        return GetColor(0xFF0000FF);
-                case 4:
-                        return GetColor(0x00008BFF);
-                case 5:
-                        return GetColor(0x800000FF);
-                case 6:
-                        return GetColor(0x008080FF);
-                case 7:
-                        return GetColor(0x000000FF);
-                case 8:
-                        return GetColor(0x808080FF);
-                default:
-                        return WHITE;
+        case 1:
+                return GetColor(0x0000FFFF);
+        case 2:
+                return GetColor(0x008000FF);
+        case 3:
+                return GetColor(0xFF0000FF);
+        case 4:
+                return GetColor(0x00008BFF);
+        case 5:
+                return GetColor(0x800000FF);
+        case 6:
+                return GetColor(0x008080FF);
+        case 7:
+                return GetColor(0x000000FF);
+        case 8:
+                return GetColor(0x808080FF);
+        default:
+                return WHITE;
         }
 }
 
 void GameController::centerCamera() {
         if (!engine) return;
-        float boardPixelWidth = (float) (engine->getWidth() * tileSize);
-        float boardPixelHeight = (float) (engine->getHeight() * tileSize);
+        float boardPixelWidth = (float)(engine->getWidth() * tileSize);
+        float boardPixelHeight = (float)(engine->getHeight() * tileSize);
 
-        float scaleX = (float) (GetScreenWidth() - 40) / boardPixelWidth;
-        float scaleY = (float) (GetScreenHeight() - 100) / boardPixelHeight;
+        float scaleX = (float)(GetScreenWidth() - 40) / boardPixelWidth;
+        float scaleY = (float)(GetScreenHeight() - 100) / boardPixelHeight;
 
         camera.zoom = std::min({scaleX, scaleY, 2.0f});
 
         camera.target = {boardPixelWidth / 2.0f, boardPixelHeight / 2.0f};
-        camera.offset = {(float) GetScreenWidth() / 2.0f, (float) (GetScreenHeight() + 60) / 2.0f};
+        camera.offset = {(float)GetScreenWidth() / 2.0f, (float)(GetScreenHeight() + 60) / 2.0f};
 }

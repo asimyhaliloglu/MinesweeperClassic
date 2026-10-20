@@ -10,6 +10,9 @@
 
 void NoGuessMinesweeper::generateBoard(int firstClickX, int firstClickY) {
         unsigned int numThreads = std::thread::hardware_concurrency();
+        if (numThreads == 0) {
+                numThreads = 4;
+        }
 
         const int maxTotalAttempts = 2000;
         const int attemptsPerThread = maxTotalAttempts / numThreads;
@@ -54,7 +57,7 @@ void NoGuessMinesweeper::generateBoard(int firstClickX, int firstClickY) {
                 threads.emplace_back(worker, i * 1000 + 7);
         }
 
-        for (auto &t : threads) {
+        for (auto& t : threads) {
                 t.join();
         }
 
@@ -66,7 +69,8 @@ void NoGuessMinesweeper::generateBoard(int firstClickX, int firstClickY) {
                 for (size_t i = 0; i < grid.size(); ++i) {
                         grid[i].isMine = winningMineMap[i];
                 }
-        } else {
+        }
+        else {
                 // Fallback: regular placement if time-out reached
                 initBoard(firstClickX, firstClickY);
         }

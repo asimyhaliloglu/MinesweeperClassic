@@ -209,8 +209,9 @@ std::vector<Deduction> Solver::reduceOverlappingEquations(const LinearEquationSy
                                         return deductions;
                                 }
                         }
-                        // return the final mapping
-                        return deductions;
                 }
         }
+
+        // return the final mapping
+        return deductions;
 }

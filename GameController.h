@@ -51,6 +51,27 @@ private:
 
         void centerCamera();
 
+        static void drawFlagIcon(int cellPixelX, int cellPixelY, int size) {
+                float x = static_cast<float>(cellPixelX);
+                float y = static_cast<float>(cellPixelY);
+                float s = static_cast<float>(size);
+
+                // 1. Pole base (dark gray / black platform)
+                Rectangle baseRect = { x + s * 0.25f, y + s * 0.80f, s * 0.50f, s * 0.08f };
+                DrawRectangleRec(baseRect, DARKGRAY);
+
+                // 2. Pole mast (vertical line up the center-left)
+                Vector2 poleBottom = { x + s * 0.38f, y + s * 0.80f };
+                Vector2 poleTop    = { x + s * 0.38f, y + s * 0.20f };
+                DrawLineEx(poleBottom, poleTop, 2.5f, BLACK);
+
+                // 3. Pennant / Banner (Red Triangle pointing right)
+                Vector2 p1 = poleTop;
+                Vector2 p2 = { x + s * 0.38f, y + s * 0.52f };
+                Vector2 p3 = { x + s * 0.82f, y + s * 0.36f };
+                DrawTriangle(p1, p2, p3, RED);
+        }
+
 public:
         GameController() {
                 camera.target = {0.0f, 0.0f};
