@@ -17,8 +17,11 @@ void NoGuessMinesweeper::generateBoard(int firstClickX, int firstClickY) {
         const int maxTotalAttempts = 2000;
         const int attemptsPerThread = maxTotalAttempts / numThreads;
 
+
+        //prevent data race
         std::atomic<bool> foundBoard(false);
         std::vector<bool> winningMineMap;
+        //mutex to handle concurrency
         std::mutex winMutex;
 
         auto worker = [&](unsigned int seedOffset) {
