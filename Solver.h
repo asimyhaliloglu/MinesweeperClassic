@@ -9,7 +9,7 @@
 
 // The final answer, holds if the cell is a mine or not
 struct Deduction {
-        Cell *cellPtr;
+        Cell* cellPtr;
         bool isMine;
 };
 
@@ -22,26 +22,26 @@ struct SparseRow {
 // A linear equation system that updates with each expansion
 struct LinearEquationSystem {
         std::vector<SparseRow> matrixA;
-        std::vector<Cell *> variableToCellMap;
+        std::vector<Cell*> variableToCellMap;
 };
 
 
 class Solver {
 public:
-        static bool isSolvable(BaseMinesweeper &board, int firstClickX, int firstClickY);
+        static bool isSolvable(BaseMinesweeper& board, int firstClickX, int firstClickY);
 
 private:
-        static LinearEquationSystem buildLinearSystem(BaseMinesweeper &board);
+        static LinearEquationSystem buildLinearSystem(BaseMinesweeper& board);
 
-        static void assignFrontierIDs(BaseMinesweeper &board, LinearEquationSystem &system);
+        static void assignFrontierIDs(BaseMinesweeper& board, LinearEquationSystem& system);
 
-        static void buildEquation(const BaseMinesweeper &board, LinearEquationSystem &system);
+        static void buildEquation(const BaseMinesweeper& board, LinearEquationSystem& system);
 
-        static std::vector<Deduction> executeAlgebraicPass(const LinearEquationSystem &system);
+        static std::vector<Deduction> executeAlgebraicPass(const LinearEquationSystem& system);
 
-        static std::vector<Deduction> findTrivialDeductions(const LinearEquationSystem &system);
+        static std::vector<Deduction> findTrivialDeductions(const LinearEquationSystem& system);
 
-        static std::vector<Deduction> reduceOverlappingEquations(const LinearEquationSystem &system);
+        static std::vector<Deduction> reduceOverlappingEquations(const LinearEquationSystem& system);
 };
 
 

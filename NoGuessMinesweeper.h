@@ -5,7 +5,6 @@
 #ifndef MINESWEEPERCLASSIC_NOGUESSMINESWEEPER_H
 #define MINESWEEPERCLASSIC_NOGUESSMINESWEEPER_H
 #include "BaseMinesweeper.h"
-#include "Solver.h"
 
 
 class NoGuessMinesweeper : public BaseMinesweeper {

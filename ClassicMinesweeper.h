@@ -10,8 +10,6 @@
 class ClassicMinesweeper : public BaseMinesweeper {
 public:
         void generateBoard(int firstClickX, int firstClickY) override;
-
-
 };
 
 #endif //MINESWEEPER_MINESWEEPER_H

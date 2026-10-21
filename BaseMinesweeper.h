@@ -16,7 +16,7 @@ struct Cell {
         bool isFlagged = false;
         int neighboringMines = 0;
 
-        std::vector<Cell *> neighbors;
+        std::vector<Cell*> neighbors;
 
         int id = -1;
 };
@@ -61,12 +61,12 @@ public:
         virtual ~BaseMinesweeper() = default;
 
         //return mutable, modifiable objects
-        [[nodiscard]] Cell &getCell(int index) {
+        [[nodiscard]] Cell& getCell(int index) {
                 return grid[index];
         }
 
         // return immutable, unmodifiable objects, read-only
-        [[nodiscard]] const Cell &getCell(int index) const {
+        [[nodiscard]] const Cell& getCell(int index) const {
                 return grid[index];
         }
 
@@ -97,11 +97,11 @@ public:
 
         void chordCell(int index);
 
-        [[nodiscard]] const std::vector<Cell> &getGrid() const {
+        [[nodiscard]] const std::vector<Cell>& getGrid() const {
                 return grid;
         }
 
-        [[nodiscard]] std::vector<Cell> &getGrid() {
+        [[nodiscard]] std::vector<Cell>& getGrid() {
                 return grid;
         }
 
@@ -112,7 +112,7 @@ public:
         }
 
         void revealAllMines() {
-                for (auto &cell : grid) {
+                for (auto& cell : grid) {
                         if (cell.isMine) {
                                 cell.isRevealed = true;
                         }
@@ -128,7 +128,7 @@ public:
         [[nodiscard]] int countUnrevealedNeighbors(int index) const;
 
         void flagAllMines() {
-                for (auto &cell : grid) {
+                for (auto& cell : grid) {
                         if (cell.isMine && !cell.isFlagged) {
                                 cell.isFlagged = true;
                                 totalFlags++;

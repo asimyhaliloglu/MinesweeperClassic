@@ -9,7 +9,8 @@ void BaseMinesweeper::toggleFlag(int index) {
         grid[index].isFlagged = !grid[index].isFlagged;
         if (grid[index].isFlagged) {
                 totalFlags++;
-        } else {
+        }
+        else {
                 totalFlags--;
         }
 }
@@ -22,7 +23,7 @@ void BaseMinesweeper::loadBoard(int w, int h, int m) {
         grid.resize(width * height);
 
         // Pure flat memory calculation
-        for (auto &cell: grid) {
+        for (auto& cell : grid) {
                 int index = static_cast<int>(&cell - &grid[0]);
                 int cx = index % width;
                 int cy = index / width;
@@ -60,7 +61,8 @@ void BaseMinesweeper::initBoard(int cx, int cy) {
                 if (useSafeOpening) {
                         // safety buffer for not instant failure
                         isInsideSafetyZone = std::abs(rx - cx) <= 1 && std::abs(ry - cy) <= 1;
-                } else {
+                }
+                else {
                         // true old school
                         isInsideSafetyZone = rx == cx && ry == cy;
                 }
@@ -76,7 +78,7 @@ void BaseMinesweeper::initBoard(int cx, int cy) {
 }
 
 void BaseMinesweeper::resetBoardSolver() {
-        for (auto &cell: grid) {
+        for (auto& cell : grid) {
                 cell.isRevealed = false;
                 cell.isFlagged = false;
                 cell.id = -1;
@@ -87,7 +89,7 @@ void BaseMinesweeper::resetBoardSolver() {
 }
 
 void BaseMinesweeper::resetBoardConstraints() {
-        for (auto &cell : grid) {
+        for (auto& cell : grid) {
                 cell.isMine = false;
                 cell.neighboringMines = 0;
         }
@@ -97,14 +99,14 @@ bool BaseMinesweeper::revealCell(int index) {
         if (index < 0 || index >= static_cast<int>(grid.size())) {
                 return false;
         }
-        Cell *startCell = &getCell(index);
+        Cell* startCell = &getCell(index);
         if (startCell->isRevealed || startCell->isFlagged) {
                 return false;
         }
-        std::vector<Cell *> toReveal;
+        std::vector<Cell*> toReveal;
         toReveal.push_back(startCell);
         while (!toReveal.empty()) {
-                Cell *current = toReveal.back();
+                Cell* current = toReveal.back();
                 toReveal.pop_back();
                 if (current->isRevealed || current->isFlagged) {
                         continue;
@@ -112,11 +114,12 @@ bool BaseMinesweeper::revealCell(int index) {
                 current->isRevealed = true;
                 if (current->isMine) {
                         mineExploded = true;
-                } else {
+                }
+                else {
                         ++totalRevealed;
                 }
                 if (current->neighboringMines == 0 && !current->isMine) {
-                        for (Cell *neighbor: current->neighbors) {
+                        for (Cell* neighbor : current->neighbors) {
                                 if (!neighbor->isRevealed && !neighbor->isFlagged) {
                                         toReveal.push_back(neighbor);
                                 }
@@ -127,12 +130,12 @@ bool BaseMinesweeper::revealCell(int index) {
 }
 
 void BaseMinesweeper::countNeighboringMines() {
-        for (auto &cell: grid) {
+        for (auto& cell : grid) {
                 if (cell.isMine) {
                         continue;
                 }
                 int mineCount = 0;
-                for (Cell *neighbor: cell.neighbors) {
+                for (Cell* neighbor : cell.neighbors) {
                         if (neighbor->isMine) {
                                 ++mineCount;
                         }
@@ -142,13 +145,13 @@ void BaseMinesweeper::countNeighboringMines() {
 }
 
 void BaseMinesweeper::chordCell(int index) {
-        Cell &cell = getCell(index);
+        Cell& cell = getCell(index);
         if (!cell.isRevealed || cell.neighboringMines == 0) {
                 return;
         }
         // If the user placed enough flags, safely clear all remaining hidden tiles
         if (countNeighboringFlags(index) == cell.neighboringMines) {
-                for (Cell *neighbor: cell.neighbors) {
+                for (Cell* neighbor : cell.neighbors) {
                         if (!neighbor->isFlagged && !neighbor->isRevealed) {
                                 revealCell(neighbor - &grid[0]);
                         }
@@ -157,9 +160,9 @@ void BaseMinesweeper::chordCell(int index) {
 }
 
 int BaseMinesweeper::countNeighboringFlags(int index) const {
-        const auto &cell = getCell(index);
+        const auto& cell = getCell(index);
         int count = 0;
-        for (Cell *neighbor: cell.neighbors) {
+        for (Cell* neighbor : cell.neighbors) {
                 if (neighbor->isFlagged) {
                         ++count;
                 }
@@ -168,9 +171,9 @@ int BaseMinesweeper::countNeighboringFlags(int index) const {
 }
 
 int BaseMinesweeper::countUnrevealedNeighbors(int index) const {
-        const auto &cell = getCell(index);
+        const auto& cell = getCell(index);
         int count = 0;
-        for (Cell *neighbor: cell.neighbors) {
+        for (Cell* neighbor : cell.neighbors) {
                 if (!neighbor->isRevealed) {
                         ++count;
                 }

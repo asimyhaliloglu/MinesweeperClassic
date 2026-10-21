@@ -51,7 +51,7 @@ private:
         void centerCamera();
 
         static void drawFlagIcon(int cellPixelX, int cellPixelY, int size);
-        
+
         static void drawMineIcon(int cellPixelX, int cellPixelY, int size);
 
 public:
@@ -61,6 +61,7 @@ public:
                 camera.rotation = 0.0f;
                 camera.zoom = 1.0f;
         }
+
         void run();
 };
 

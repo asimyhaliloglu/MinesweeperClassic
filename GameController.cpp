@@ -173,7 +173,8 @@ void GameController::renderGame() const {
                                 // Red tile highlight for the mine that blew up, RAYWHITE for the others
                                 DrawRectangleRec(rect, currentState == GameState::LOST ? RED : RAYWHITE);
                                 drawMineIcon(x, y, tileSize);
-                        } else {
+                        }
+                        else {
                                 DrawRectangleRec(rect, RAYWHITE);
                                 if (cell.neighboringMines > 0) {
                                         DrawText(TextFormat("%d", cell.neighboringMines), x + 10, y + 6, 20,
