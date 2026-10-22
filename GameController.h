@@ -66,11 +66,25 @@ private:
         HitTarget touchStartTarget = {};
         bool touchPending = false;
         bool touchBlocked = false;
+        Vector2 suppressedTouchReleasePosition = {};
+        int touchMouseSuppressionFrames = 0;
         bool suppressMouseUntilRelease = false;
         std::array<int, 2> pinchTouchIds = {-1, -1};
         Vector2 pinchMidpoint = {};
         float pinchDistance = 0.0f;
         bool pinchActive = false;
+
+        enum class SoundEffect {
+                DIG,
+                FLAG,
+                CHORD,
+                LOSS,
+                WIN
+        };
+
+        std::array<Sound, 5> soundEffects{};
+        std::array<std::array<int, 4>, 2> bestTimes{};
+        bool audioDeviceReady = false;
 
         bool handleTouchGestures();
         void resetTouchState();
@@ -79,6 +93,15 @@ private:
         [[nodiscard]] HitTarget hitTest(Vector2 position) const;
         void activateTarget(HitTarget target);
         void actOnCell(int index, TouchTool tool);
+        void initializeAudio();
+        void unloadAudio();
+        void playSoundEffect(SoundEffect effect) const;
+        void loadBestTimes();
+        void saveBestTimes() const;
+        void recordWin();
+        [[nodiscard]] int getSelectedDifficultyIndex() const;
+        [[nodiscard]] int getSelectedModeIndex() const;
+        [[nodiscard]] int getBestTimeForSelection() const;
 
         std::unique_ptr<BaseMinesweeper> engine;
         AppState appState = AppState::MAIN_MENU;

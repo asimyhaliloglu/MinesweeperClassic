@@ -12,6 +12,8 @@ enum class GameMode {
         NO_GUESS
 };
 
+inline bool soundEnabled = true;
+
 struct DifficultyConfig {
         int width;
         int height;
