@@ -4,6 +4,27 @@
 
 #include "Solver.h"
 #include <algorithm>
+#include <utility>
+
+namespace {
+        class CellIdRestorer {
+        private:
+                std::vector<Cell>& cells;
+                std::vector<int> savedIds;
+
+        public:
+                explicit CellIdRestorer(std::vector<Cell>& boardCells) : cells(boardCells) {
+                        savedIds.reserve(cells.size());
+                        for (const Cell& cell : cells) savedIds.push_back(cell.id);
+                }
+
+                ~CellIdRestorer() {
+                        for (std::size_t index = 0; index < cells.size(); ++index) {
+                                cells[index].id = savedIds[index];
+                        }
+                }
+        };
+}
 
 bool Solver::isSolvable(BaseMinesweeper& board, int firstClickX, int firstClickY) {
         int firstClickIdx = board.getCellID(firstClickX, firstClickY);
@@ -30,6 +51,13 @@ bool Solver::isSolvable(BaseMinesweeper& board, int firstClickX, int firstClickY
                         }
                 }
         }
+}
+
+SolverHintAnalysis Solver::analyzeForHint(BaseMinesweeper& board) {
+        CellIdRestorer restoreIds(board.getGrid());
+        LinearEquationSystem system = buildLinearSystem(board);
+        std::vector<Deduction> deductions = executeAlgebraicPass(system);
+        return {std::move(system), std::move(deductions)};
 }
 
 // Assign linear equation IDs x_n acting as pointers,

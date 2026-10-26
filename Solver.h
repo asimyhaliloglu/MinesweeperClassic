@@ -5,6 +5,7 @@
 #ifndef MINESWEEPERCLASSIC_SOLVER_H
 #define MINESWEEPERCLASSIC_SOLVER_H
 #include "BaseMinesweeper.h"
+#include <vector>
 
 
 // The final answer, holds if the cell is a mine or not
@@ -25,10 +26,15 @@ struct LinearEquationSystem {
         std::vector<Cell*> variableToCellMap;
 };
 
+struct SolverHintAnalysis {
+        LinearEquationSystem system;
+        std::vector<Deduction> deductions;
+};
 
 class Solver {
 public:
         static bool isSolvable(BaseMinesweeper& board, int firstClickX, int firstClickY);
+        static SolverHintAnalysis analyzeForHint(BaseMinesweeper& board);
 
 private:
         static LinearEquationSystem buildLinearSystem(BaseMinesweeper& board);

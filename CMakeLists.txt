@@ -28,9 +28,9 @@ if(TARGET raylib)
     message(STATUS "Using the raylib target supplied by the parent project")
 elseif(MINESWEEPER_IOS)
     message(FATAL_ERROR
-        "iOS builds provide minesweeper_core only. Supply an iOS-compatible raylib target "
-        "in a parent project before add_subdirectory(MineSweeper). The Apple launcher, "
-        "raylib backend integration, signing, and packaging are not included.")
+            "iOS builds provide minesweeper_core only. Supply an iOS-compatible raylib target "
+            "in a parent project before add_subdirectory(MineSweeper). The Apple launcher, "
+            "raylib backend integration, signing, and packaging are not included.")
 elseif(RAYLIB_SRC_DIR)
     if(NOT EXISTS "${RAYLIB_SRC_DIR}/CMakeLists.txt")
         message(FATAL_ERROR "RAYLIB_SRC_DIR must point to a raylib source checkout containing CMakeLists.txt")
@@ -41,9 +41,9 @@ else()
     include(FetchContent)
     set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
     FetchContent_Declare(raylib
-        GIT_REPOSITORY https://github.com/raysan5/raylib.git
-        GIT_TAG 5.5
-        GIT_SHALLOW TRUE
+            GIT_REPOSITORY https://github.com/raysan5/raylib.git
+            GIT_TAG 5.5
+            GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(raylib)
 endif()
@@ -51,23 +51,23 @@ endif()
 find_package(Threads REQUIRED)
 
 add_library(minesweeper_core STATIC
-    BaseMinesweeper.cpp
-    BaseMinesweeper.h
-    ClassicMinesweeper.cpp
-    ClassicMinesweeper.h
-    NoGuessMinesweeper.cpp
-    NoGuessMinesweeper.h
-    Solver.cpp
-    Solver.h
-    GameController.cpp
-    GameController.h
-    Config.h
+        BaseMinesweeper.cpp
+        BaseMinesweeper.h
+        ClassicMinesweeper.cpp
+        ClassicMinesweeper.h
+        NoGuessMinesweeper.cpp
+        NoGuessMinesweeper.h
+        Solver.cpp
+        Solver.h
+        GameController.cpp
+        GameController.h
+        Config.h
 )
 set_target_properties(minesweeper_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(minesweeper_core PUBLIC cxx_std_20)
 target_include_directories(minesweeper_core PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>")
 target_compile_definitions(minesweeper_core PRIVATE
-    MINESWEEPER_MOBILE_CONTROLS=$<BOOL:${MINESWEEPER_MOBILE_CONTROLS}>
+        MINESWEEPER_MOBILE_CONTROLS=$<BOOL:${MINESWEEPER_MOBILE_CONTROLS}>
 )
 if(MINESWEEPER_IOS)
     target_compile_definitions(minesweeper_core PRIVATE PLATFORM_IOS)
@@ -90,9 +90,9 @@ if(NOT MINESWEEPER_IOS)
         if(NOT MINESWEEPER_WEB_SHELL)
             get_target_property(raylib_target_source_dir raylib SOURCE_DIR)
             find_file(minesweeper_default_web_shell minshell.html
-                HINTS "${raylib_target_source_dir}" "${raylib_target_source_dir}/src"
-                      "${RAYLIB_SRC_DIR}/src" "${raylib_SOURCE_DIR}" "${raylib_SOURCE_DIR}/src"
-                NO_DEFAULT_PATH
+                    HINTS "${raylib_target_source_dir}" "${raylib_target_source_dir}/src"
+                    "${RAYLIB_SRC_DIR}/src" "${raylib_SOURCE_DIR}" "${raylib_SOURCE_DIR}/src"
+                    NO_DEFAULT_PATH
             )
             if(NOT minesweeper_default_web_shell)
                 message(FATAL_ERROR "Cannot locate raylib minshell.html; set MINESWEEPER_WEB_SHELL explicitly")
@@ -102,11 +102,11 @@ if(NOT MINESWEEPER_IOS)
         set_target_properties(${PROJECT_NAME} PROPERTIES SUFFIX ".html")
         target_compile_options(minesweeper_core PUBLIC "-pthread")
         target_link_options(${PROJECT_NAME} PRIVATE
-            "-pthread"
-            "-sUSE_GLFW=3"
-            "-sALLOW_MEMORY_GROWTH=1"
-            "-sEXPORTED_RUNTIME_METHODS=ccall"
-            "--shell-file" "${MINESWEEPER_WEB_SHELL}"
+                "-pthread"
+                "-sUSE_GLFW=3"
+                "-sALLOW_MEMORY_GROWTH=1"
+                "-sEXPORTED_RUNTIME_METHODS=ccall"
+                "--shell-file" "${MINESWEEPER_WEB_SHELL}"
         )
     endif()
 endif()

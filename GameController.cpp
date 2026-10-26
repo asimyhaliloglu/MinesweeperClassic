@@ -10,12 +10,16 @@
 
 #include "ClassicMinesweeper.h"
 
+#include "Solver.h"
+
 #include "raylib.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -210,7 +214,7 @@ namespace {
                         {bounds.x + thickness * 0.5f, bounds.y + halfHeight - thickness * 0.5f,
                          bounds.width - thickness, thickness}
                 }};
-                constexpr Color inactiveColor = {38, 0, 0, 255};
+                constexpr Color inactiveColor = {43, 0, 0, 255};
                 for (int index = 0; index < static_cast<int>(segments.size()); ++index) {
                         const Color color = (activeSegments & (1 << index)) != 0 ? activeColor : inactiveColor;
                         const Rectangle segment = segments[index];
@@ -226,7 +230,7 @@ namespace {
         }
 
         void drawLedCounter(Rectangle bounds, int value) {
-                drawBeveledSurface(bounds, BLACK, bounds.height * 0.09f, false);
+                drawBeveledSurface(bounds, Color{10, 10, 10, 255}, bounds.height * 0.09f, false);
                 const int displayValue = std::clamp(value, -99, 999);
                 const char* display = TextFormat("%03d", displayValue);
                 const float digitHeight = bounds.height * 0.72f;
@@ -236,7 +240,7 @@ namespace {
                 for (int index = 0; index < 3; ++index) {
                         const int digit = display[index] == '-' ? -1 : display[index] - '0';
                         drawSevenSegmentDigit({bounds.x + gap + index * (digitWidth + gap), digitY,
-                                               digitWidth, digitHeight}, digit, Color{255, 0, 0, 255});
+                                               digitWidth, digitHeight}, digit, Color{255, 30, 39, 255});
                 }
         }
 
@@ -370,7 +374,11 @@ void GameController::init() {
 
         appState = AppState::MAIN_MENU;
         currentState = GameState::BEGIN;
+        elapsedTimeSeconds = 0.0;
+        lastTimerUpdateTime = 0.0;
         timeElapsed = 0;
+        hintedCellIndex = -1;
+        hintType = HintType::NONE;
         touchTool = TouchTool::DIG;
         initializeAudio();
         loadBestTimes();
@@ -389,6 +397,7 @@ void GameController::frame() {
                 update();
         }
         else {
+                if (currentState == GameState::RUNNING) lastTimerUpdateTime = GetTime();
                 resetTouchState();
         }
         render();
@@ -614,7 +623,7 @@ GameController::UILayout GameController::getLayout() const {
                 const float controlHeight = std::clamp(screenHeight * 0.075f, 40.0f * uiScale, 64.0f * uiScale);
                 const float controlGap = 8.0f * uiScale;
                 const float toolbarPadding = 12.0f * uiScale;
-                const int columns = screenWidth < 440.0f * uiScale ? 2 : 4;
+                const int columns = screenWidth < 440.0f * uiScale ? 2 : 5;
                 const int rows = (static_cast<int>(layout.toolbar.size()) + columns - 1) / columns;
                 float controlWidth = std::max(1.0f, (screenWidth - toolbarPadding * 2.0f
                                                        - (columns - 1) * controlGap) / columns);
@@ -647,7 +656,8 @@ GameController::HitTarget GameController::hitTest(Vector2 position) const {
         if (appState != AppState::PLAYING) return {};
         if (CheckCollisionPointRec(position, layout.restart)) return {Control::RESTART};
         if (mobileControlsEnabled) {
-                constexpr Control controls[] = {Control::DIG, Control::FLAG, Control::FIT, Control::MENU};
+                constexpr Control controls[] = {Control::DIG, Control::FLAG, Control::FIT, Control::HINT,
+                                                Control::MENU};
                 for (int index = 0; index < static_cast<int>(layout.toolbar.size()); ++index) {
                         if (CheckCollisionPointRec(position, layout.toolbar[index])) return {controls[index]};
                 }
@@ -686,6 +696,9 @@ void GameController::activateTarget(HitTarget target) {
         case Control::FIT:
                 centerCamera();
                 break;
+        case Control::HINT:
+                requestHint();
+                break;
         case Control::RESTART:
                 reset({engine->getWidth(), engine->getHeight(), engine->total_mines()});
                 break;
@@ -703,6 +716,15 @@ void GameController::activateTarget(HitTarget target) {
 
 void GameController::actOnCell(int index, TouchTool tool) {
         if (currentState == GameState::WON || currentState == GameState::LOST) return;
+        const auto countRevealedCells = [this]() {
+                return static_cast<int>(std::count_if(engine->getGrid().begin(), engine->getGrid().end(),
+                        [](const Cell& cell) { return cell.isRevealed; }));
+        };
+        const int revealedBefore = countRevealedCells();
+        if (index == hintedCellIndex) {
+                hintedCellIndex = -1;
+                hintType = HintType::NONE;
+        }
         if (tool == TouchTool::FLAG) {
                 if (currentState == GameState::RUNNING && !engine->getCell(index).isRevealed) {
                         const bool wasFlagged = engine->getCell(index).isFlagged;
@@ -713,8 +735,18 @@ void GameController::actOnCell(int index, TouchTool tool) {
         }
         if (currentState == GameState::BEGIN) {
                 engine->generateBoard(index % engine->getWidth(), index / engine->getWidth());
-                currentState = GameState::RUNNING;
-                startTime = GetTime();
+                if (engine->revealCell(index)) {
+                        currentState = GameState::RUNNING;
+                        elapsedTimeSeconds = 0.0;
+                        timeElapsed = 0;
+                        lastTimerUpdateTime = GetTime();
+                        playSoundEffect(SoundEffect::DIG);
+                }
+                if (countRevealedCells() > revealedBefore) {
+                        hintedCellIndex = -1;
+                        hintType = HintType::NONE;
+                }
+                return;
         }
         if (engine->getCell(index).isRevealed) {
                 const Cell& clue = engine->getCell(index);
@@ -734,6 +766,91 @@ void GameController::actOnCell(int index, TouchTool tool) {
         }
         else if (engine->revealCell(index)) {
                 playSoundEffect(SoundEffect::DIG);
+        }
+        if (countRevealedCells() > revealedBefore) {
+                hintedCellIndex = -1;
+                hintType = HintType::NONE;
+        }
+}
+
+void GameController::requestHint() {
+        if (!engine || appState != AppState::PLAYING || currentState != GameState::RUNNING
+            || engine->isGameWon() || engine->isGameLost()) return;
+
+        hintedCellIndex = -1;
+        hintType = HintType::NONE;
+        const SolverHintAnalysis analysis = Solver::analyzeForHint(*engine);
+        const std::vector<Cell>& cells = engine->getGrid();
+        const auto getCandidateIndex = [&cells](const Cell* cell) {
+                if (!cell || cells.empty()) return -1;
+                const std::ptrdiff_t index = cell - cells.data();
+                if (index < 0 || index >= static_cast<std::ptrdiff_t>(cells.size())) return -1;
+                if (cells[static_cast<std::size_t>(index)].isRevealed
+                    || cells[static_cast<std::size_t>(index)].isFlagged) return -1;
+                return static_cast<int>(index);
+        };
+
+        int safeCellIndex = -1;
+        int mineCellIndex = -1;
+        for (const Deduction& deduction : analysis.deductions) {
+                const int cellIndex = getCandidateIndex(deduction.cellPtr);
+                if (cellIndex < 0) continue;
+                int& bestIndex = deduction.isMine ? mineCellIndex : safeCellIndex;
+                if (bestIndex < 0 || cellIndex < bestIndex) bestIndex = cellIndex;
+        }
+        if (safeCellIndex >= 0) {
+                hintedCellIndex = safeCellIndex;
+                hintType = HintType::SAFE;
+                return;
+        }
+        if (mineCellIndex >= 0) {
+                hintedCellIndex = mineCellIndex;
+                hintType = HintType::MINE;
+                return;
+        }
+
+        const std::size_t variableCount = analysis.system.variableToCellMap.size();
+        std::vector<double> probabilityTotals(variableCount, 0.0);
+        std::vector<int> probabilityCounts(variableCount, 0);
+        for (const SparseRow& row : analysis.system.matrixA) {
+                const std::size_t activeCount = row.activeVarIDs.size();
+                if (activeCount == 0 || row.targetValue < 0
+                    || static_cast<std::size_t>(row.targetValue) > activeCount) continue;
+                const double rowMineProbability = static_cast<double>(row.targetValue)
+                        / static_cast<double>(activeCount);
+                for (const int variableId : row.activeVarIDs) {
+                        if (variableId < 0 || static_cast<std::size_t>(variableId) >= variableCount) continue;
+                        probabilityTotals[static_cast<std::size_t>(variableId)] += rowMineProbability;
+                        ++probabilityCounts[static_cast<std::size_t>(variableId)];
+                }
+        }
+
+        double lowestRisk = std::numeric_limits<double>::infinity();
+        for (std::size_t variableId = 0; variableId < variableCount; ++variableId) {
+                const int cellIndex = getCandidateIndex(analysis.system.variableToCellMap[variableId]);
+                if (cellIndex < 0 || probabilityCounts[variableId] == 0) continue;
+                const double risk = probabilityTotals[variableId] / probabilityCounts[variableId];
+                if (risk < lowestRisk || (risk == lowestRisk
+                    && (hintedCellIndex < 0 || cellIndex < hintedCellIndex))) {
+                        lowestRisk = risk;
+                        hintedCellIndex = cellIndex;
+                }
+        }
+        if (hintedCellIndex >= 0) {
+                hintType = HintType::GUESS;
+                return;
+        }
+
+        const int hiddenCellCount = static_cast<int>(std::count_if(cells.begin(), cells.end(),
+                [](const Cell& cell) { return !cell.isRevealed && !cell.isFlagged; }));
+        if (hiddenCellCount == 0) return;
+        for (int index = 0; index < static_cast<int>(cells.size()); ++index) {
+                if (!cells[static_cast<std::size_t>(index)].isRevealed
+                    && !cells[static_cast<std::size_t>(index)].isFlagged) {
+                        hintedCellIndex = index;
+                        hintType = HintType::GUESS;
+                        return;
+                }
         }
 }
 
@@ -896,9 +1013,12 @@ void GameController::renderGame() const {
                 }
                 else {
                         if (cell.isMine) {
-                                const Color mineCellColor = idx == explodedMineIndex
-                                        ? Color{229, 57, 53, 255} : Color{229, 231, 235, 255};
-                                drawBoardTile(rect, mineCellColor, false);
+                                if (idx == explodedMineIndex) {
+                                        drawBeveledSurface(rect, Color{220, 38, 38, 255}, 2.0f, false);
+                                }
+                                else {
+                                        drawBoardTile(rect, Color{229, 231, 235, 255}, false);
+                                }
                                 drawMineIcon(x, y, tileSize);
                         }
                         else {
@@ -912,6 +1032,14 @@ void GameController::renderGame() const {
                                                          getNumberColor(cell.neighboringMines));
                                 }
                         }
+                }
+                if (idx == hintedCellIndex && hintType != HintType::NONE) {
+                        const float pulse = 0.5f + 0.5f * std::sin(static_cast<float>(GetTime() * 5.0));
+                        Color hintColor = hintType == HintType::MINE ? Color{245, 158, 11, 255}
+                                : hintType == HintType::GUESS ? Color{6, 182, 212, 255}
+                                : Color{16, 185, 129, 255};
+                        hintColor.a = static_cast<unsigned char>(110.0f + pulse * 135.0f);
+                        DrawRectangleLinesEx(rect, std::max(2.0f, tileSize * 0.075f), hintColor);
                 }
         }
         EndMode2D();
@@ -933,6 +1061,10 @@ void GameController::handleGameInput() {
 #endif
         if ((currentState == GameState::LOST || currentState == GameState::WON) && IsKeyPressed(KEY_R)) {
                 reset({engine->getWidth(), engine->getHeight(), engine->total_mines()});
+                return;
+        }
+        if (IsKeyPressed(KEY_H)) {
+                requestHint();
                 return;
         }
         if (handleTouchGestures()) return;
@@ -965,7 +1097,14 @@ void GameController::update() {
         if (currentState != GameState::RUNNING) {
                 return;
         }
-        timeElapsed = static_cast<int>(GetTime() - startTime);
+        const double currentTime = GetTime();
+        if (appState != AppState::PLAYING) {
+                lastTimerUpdateTime = currentTime;
+                return;
+        }
+        elapsedTimeSeconds += std::max(0.0, currentTime - lastTimerUpdateTime);
+        lastTimerUpdateTime = currentTime;
+        timeElapsed = static_cast<int>(elapsedTimeSeconds);
 
         if (engine->isGameLost()) {
                 currentState = GameState::LOST;
@@ -999,8 +1138,12 @@ void GameController::reset(DifficultyConfig config) {
         engine->loadBoard(config.width, config.height, config.mineCount);
 
         // Reset tracking metrics
+        elapsedTimeSeconds = 0.0;
+        lastTimerUpdateTime = GetTime();
         timeElapsed = 0;
         explodedMineIndex = -1;
+        hintedCellIndex = -1;
+        hintType = HintType::NONE;
         currentState = GameState::BEGIN;
         appState = AppState::PLAYING;
         touchTool = TouchTool::DIG;
@@ -1076,27 +1219,31 @@ void GameController::drawFlagIcon(int cellPixelX, int cellPixelY, int size) {
 void GameController::drawMineIcon(int cellPixelX, int cellPixelY, int size) {
         const float x = static_cast<float>(cellPixelX);
         const float y = static_cast<float>(cellPixelY);
-        const float pixelSize = static_cast<float>(size) / 16.0f;
-        constexpr Color mine = BLACK;
+        const float cellSize = static_cast<float>(size);
+        const Vector2 center = {x + cellSize * 0.5f, y + cellSize * 0.5f};
+        const float bodyRadius = cellSize * 0.28f;
+        const float spikeLength = cellSize * 0.38f;
+        constexpr Color mineColor = {17, 24, 39, 255};
+        constexpr std::array<Vector2, 8> directions = {{
+                {1.0f, 0.0f}, {0.7071f, 0.7071f}, {0.0f, 1.0f}, {-0.7071f, 0.7071f},
+                {-1.0f, 0.0f}, {-0.7071f, -0.7071f}, {0.0f, -1.0f}, {0.7071f, -0.7071f}
+        }};
 
-        drawPixelBlock(x, y, pixelSize, 0, 7, 6, 2, mine);
-        drawPixelBlock(x, y, pixelSize, 10, 7, 6, 2, mine);
-        drawPixelBlock(x, y, pixelSize, 7, 0, 2, 6, mine);
-        drawPixelBlock(x, y, pixelSize, 7, 10, 2, 6, mine);
-        for (int step = 1; step <= 6; ++step) {
-                drawPixelBlock(x, y, pixelSize, 7 - step, 7 - step, 1, 1, mine);
-                drawPixelBlock(x, y, pixelSize, 8 + step, 8 + step, 1, 1, mine);
-                drawPixelBlock(x, y, pixelSize, 8 + step, 7 - step, 1, 1, mine);
-                drawPixelBlock(x, y, pixelSize, 7 - step, 8 + step, 1, 1, mine);
+        for (const Vector2 direction : directions) {
+                const Vector2 start = {center.x + direction.x * bodyRadius * 0.92f,
+                                       center.y + direction.y * bodyRadius * 0.92f};
+                const Vector2 tip = {center.x + direction.x * spikeLength,
+                                     center.y + direction.y * spikeLength};
+                const Vector2 perpendicular = {-direction.y, direction.x};
+                DrawLineEx(start, tip, 2.0f, mineColor);
+                DrawLineEx({tip.x - perpendicular.x * 1.5f, tip.y - perpendicular.y * 1.5f},
+                           {tip.x + perpendicular.x * 1.5f, tip.y + perpendicular.y * 1.5f},
+                           1.5f, mineColor);
         }
-
-        constexpr int bodyStarts[] = {6, 4, 3, 2, 2, 3, 4, 6};
-        constexpr int bodyWidths[] = {4, 8, 10, 12, 12, 10, 8, 4};
-        for (int row = 0; row < 8; ++row) {
-                drawPixelBlock(x, y, pixelSize, bodyStarts[row], row + 4,
-                               bodyWidths[row], 1, mine);
-        }
-        drawPixelBlock(x, y, pixelSize, 5, 5, 1, 1, WHITE);
+        DrawCircleV(center, bodyRadius, mineColor);
+        DrawCircleLinesV(center, bodyRadius, BLACK);
+        DrawCircleV({center.x - bodyRadius * 0.35f, center.y - bodyRadius * 0.35f},
+                    bodyRadius * 0.25f, RAYWHITE);
 }
 
 
@@ -1224,11 +1371,11 @@ void GameController::renderMobileControls() const {
         drawBeveledSurface({0.0f, layout.toolbarTop, layout.header.width,
                             static_cast<float>(GetScreenHeight()) - layout.toolbarTop}, classicSurface,
                            3.0f * uiScale, true);
-        const char* labels[] = {"Dig", "Flag", "Fit", "Menu"};
+        const char* labels[] = {"Dig", "Flag", "Fit", "Hint", "Menu"};
         for (int index = 0; index < static_cast<int>(layout.toolbar.size()); ++index) {
                 const bool selected = (index == 0 && touchTool == TouchTool::DIG)
                         || (index == 1 && touchTool == TouchTool::FLAG);
-                const bool enabled = index != 1 || currentState == GameState::RUNNING;
+                const bool enabled = (index != 1 && index != 3) || currentState == GameState::RUNNING;
                 const Rectangle bounds = layout.toolbar[index];
                 drawButton(labels[index], bounds, selected, enabled);
         }

@@ -25,6 +25,12 @@ private:
                 FLAG
         };
 
+        enum class HintType {
+                NONE,
+                SAFE,
+                MINE,
+                GUESS
+        };
 
         enum class Control {
                 NONE,
@@ -36,6 +42,7 @@ private:
                 DIG,
                 FLAG,
                 FIT,
+                HINT,
                 RESTART,
                 MENU,
                 CELL
@@ -58,7 +65,7 @@ private:
                 Rectangle timeCounter = {};
                 Rectangle status = {};
                 Rectangle board = {};
-                std::array<Rectangle, 4> toolbar = {};
+                std::array<Rectangle, 5> toolbar = {};
                 float toolbarTop = 0.0f;
         };
 
@@ -97,6 +104,7 @@ private:
         [[nodiscard]] HitTarget hitTest(Vector2 position) const;
         void activateTarget(HitTarget target);
         void actOnCell(int index, TouchTool tool);
+        void requestHint();
         void initializeAudio();
         void unloadAudio();
         void playSoundEffect(SoundEffect effect) const;
@@ -113,9 +121,12 @@ private:
         GameState currentState = GameState::BEGIN;
         int tileSize = 32;
 
-        double startTime = 0.0;
+        double elapsedTimeSeconds = 0.0;
+        double lastTimerUpdateTime = 0.0;
         int timeElapsed = 0;
         int explodedMineIndex = -1;
+        int hintedCellIndex = -1;
+        HintType hintType = HintType::NONE;
 
         Camera2D camera = {};
 
