@@ -53,8 +53,12 @@ private:
                 Rectangle mode = {};
                 std::array<Rectangle, 4> difficulties = {};
                 Rectangle header = {};
+                Rectangle mineCounter = {};
+                Rectangle restart = {};
+                Rectangle timeCounter = {};
+                Rectangle status = {};
                 Rectangle board = {};
-                std::array<Rectangle, 5> toolbar = {};
+                std::array<Rectangle, 4> toolbar = {};
                 float toolbarTop = 0.0f;
         };
 
@@ -111,6 +115,7 @@ private:
 
         double startTime = 0.0;
         int timeElapsed = 0;
+        int explodedMineIndex = -1;
 
         Camera2D camera = {};
 
