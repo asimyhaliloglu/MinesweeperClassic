@@ -46,8 +46,6 @@ protected:
                 return x >= 0 && x < width && y >= 0 && y < height;
         }
 
-        void countFlags(int x, int y);
-
         void initBoard(int cx, int cy);
 
 public:
@@ -122,8 +120,6 @@ public:
         virtual void generateBoard(int firstClickX, int firstClickY) = 0;
 
         [[nodiscard]] int countNeighboringFlags(int index) const;
-
-        [[nodiscard]] int countNeighboringMines(int x, int y) const;
 
         [[nodiscard]] int countUnrevealedNeighbors(int index) const;
 

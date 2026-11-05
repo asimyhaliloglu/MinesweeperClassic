@@ -56,8 +56,5 @@ constexpr DifficultyConfig INTERMEDIATE = {16, 16, 40};
 constexpr DifficultyConfig EXPERT = {30, 16, 99};
 constexpr DifficultyConfig EVIL = {30, 20, 130};
 
-class Config {
-};
-
 
 #endif //MINESWEEPERCLASSIC_CONFIG_H

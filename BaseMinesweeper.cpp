@@ -114,10 +114,9 @@ bool BaseMinesweeper::revealCell(int index) {
                 current->isRevealed = true;
                 if (current->isMine) {
                         mineExploded = true;
+                        return true;
                 }
-                else {
-                        ++totalRevealed;
-                }
+                ++totalRevealed;
                 if (current->neighboringMines == 0 && !current->isMine) {
                         for (Cell* neighbor : current->neighbors) {
                                 if (!neighbor->isRevealed && !neighbor->isFlagged) {
@@ -152,6 +151,7 @@ void BaseMinesweeper::chordCell(int index) {
         // If the user placed enough flags, safely clear all remaining hidden tiles
         if (countNeighboringFlags(index) == cell.neighboringMines) {
                 for (Cell* neighbor : cell.neighbors) {
+                        if (mineExploded) break;
                         if (!neighbor->isFlagged && !neighbor->isRevealed) {
                                 revealCell(neighbor - &grid[0]);
                         }
