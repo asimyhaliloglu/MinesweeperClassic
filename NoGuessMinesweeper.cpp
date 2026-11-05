@@ -7,6 +7,8 @@
 #include <thread>
 #include <atomic>
 #include <vector>
+#include <mutex>
+#include <random>
 
 void NoGuessMinesweeper::generateBoard(int firstClickX, int firstClickY) {
         unsigned int numThreads = std::thread::hardware_concurrency();

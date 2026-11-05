@@ -1,15 +1,34 @@
 #ifndef MINESWEEPERCLASSIC_CONFIG_H
 #define MINESWEEPERCLASSIC_CONFIG_H
 
-enum class AppState {
-        MAIN_MENU,
-        PLAYING,
-        OPTIONS
+enum class GameState {
+        BEGIN,
+        RUNNING,
+        WON,
+        LOST
+};
+
+enum class TouchTool {
+        DIG,
+        FLAG
 };
 
 enum class GameMode {
         CLASSIC,
-        NO_GUESS
+        NO_GUESS       
+};
+
+enum class HintType {
+        NONE,
+        SAFE,
+        MINE,
+        GUESS
+};
+
+enum class AppState {
+        MAIN_MENU,
+        PLAYING,
+        OPTIONS
 };
 
 inline bool soundEnabled = true;
